@@ -1,4 +1,4 @@
-package pl.touk.nussknacker.ui.security
+package pl.touk.nussknacker.ui.security.basicauth
 
 import java.io.File
 
@@ -7,11 +7,11 @@ import akka.http.scaladsl.server.directives.{Credentials, SecurityDirectives}
 import com.typesafe.config.{Config, ConfigFactory}
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import pl.touk.nussknacker.ui.security.api.LoggedUser
 import net.ceedubs.ficus.readers.EnumerationReader._
-import pl.touk.nussknacker.ui.security.api.Permission.Permission
-import BasicHttpAuthenticator._
 import org.mindrot.jbcrypt.BCrypt
+import pl.touk.nussknacker.ui.security.api.LoggedUser
+import pl.touk.nussknacker.ui.security.api.Permission.Permission
+import pl.touk.nussknacker.ui.security.basicauth.BasicHttpAuthenticator._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -29,7 +29,7 @@ class BasicHttpAuthenticator(usersList: List[ConfiguredUser]) extends SecurityDi
     credentials match {
       case d@Provided(id) => users
         .get(id)
-        .filter(u => d.verify(u.password.value, hash(u)))
+        .find(u => d.verify(u.password.value, hash(u)))
         .map(_.toLoggedUser)
       case _ => None
     }
@@ -55,16 +55,13 @@ class BasicHttpAuthenticator(usersList: List[ConfiguredUser]) extends SecurityDi
       u.id -> UserWithPassword(u.id, password, u.categoryPermissions, u.isAdmin)
     }.toMap
   }
-
 }
 
 object BasicHttpAuthenticator {
 
-  def apply(path: String): BasicHttpAuthenticator =
-    BasicHttpAuthenticator(ConfigFactory.parseFile(new File(path)))
+  def apply(path: String): BasicHttpAuthenticator = BasicHttpAuthenticator(ConfigFactory.parseFile(new File(path)))
 
-  def apply(config: Config): BasicHttpAuthenticator =
-    new BasicHttpAuthenticator(config.as[List[ConfiguredUser]]("users"))
+  def apply(config: Config): BasicHttpAuthenticator = new BasicHttpAuthenticator(config.as[List[ConfiguredUser]]("users"))
 
 
   private[security] case class ConfiguredUser(id: String,
@@ -81,8 +78,10 @@ object BasicHttpAuthenticator {
 
   private case class EncryptedPassword(value: String) extends Password
 
-  private case class UserWithPassword(id: String, password: Password, categoryPermissions: Map[String, Set[Permission]], isAdmin: Boolean) {
+  private case class UserWithPassword(id: String,
+                                      password: Password,
+                                      categoryPermissions: Map[String, Set[Permission]] = Map.empty,
+                                      isAdmin: Boolean = false) {
     def toLoggedUser = LoggedUser(id, categoryPermissions, isAdmin)
   }
-
 }

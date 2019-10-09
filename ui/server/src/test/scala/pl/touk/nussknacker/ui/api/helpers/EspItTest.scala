@@ -25,6 +25,7 @@ import pl.touk.nussknacker.restmodel.process
 import pl.touk.nussknacker.ui.config.FeatureTogglesConfig
 import pl.touk.nussknacker.engine.marshall.ProcessMarshaller
 import pl.touk.nussknacker.ui.processreport.ProcessCounter
+import pl.touk.nussknacker.ui.security.AuthenticationConfig
 import pl.touk.nussknacker.ui.security.api.{LoggedUser, Permission}
 
 trait EspItTest extends LazyLogging with ScalaFutures with WithHsqlDbTesting with TestPermissions { self: ScalatestRouteTest with Suite with BeforeAndAfterEach with Matchers =>
@@ -72,7 +73,8 @@ trait EspItTest extends LazyLogging with ScalaFutures with WithHsqlDbTesting wit
   private val config = system.settings.config.withFallback(ConfigFactory.load())
   val featureTogglesConfig = FeatureTogglesConfig.create(config)
   val typeToConfig = ProcessingTypeDeps(config, featureTogglesConfig.standaloneMode)
-  val settingsRoute = new SettingsResources(featureTogglesConfig, typeToConfig)
+  val authenticationConfig = AuthenticationConfig(config)
+  val settingsRoute = new SettingsResources(featureTogglesConfig, typeToConfig, authenticationConfig)
 
   val processesExportResources = new ProcessesExportResources(processRepository, processActivityRepository)
   val definitionResources = new DefinitionResources(
@@ -80,7 +82,7 @@ trait EspItTest extends LazyLogging with ScalaFutures with WithHsqlDbTesting wit
 
   val processesRouteWithAllPermissions = withAllPermissions(processesRoute)
 
-  val settingsRouteWithAllPermissions = withAllPermissions(settingsRoute)
+  val settingsRouteWithAllPermissions = withoutPermissions(settingsRoute)
 
   def deployRoute(requireComment: Boolean = false) = new ManagementResources(
     processCounter = new ProcessCounter(TestFactory.sampleSubprocessRepository),

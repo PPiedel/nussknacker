@@ -8,10 +8,11 @@ import pl.touk.nussknacker.engine.api.deployment.{DeploymentId, ProcessDeploymen
 import pl.touk.nussknacker.engine.api.process.ProcessName
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.management.{FlinkProcessManager, FlinkProcessManagerProvider}
+import pl.touk.nussknacker.restmodel.process.repository.FetchingProcessRepository
 import pl.touk.nussknacker.ui.api.RouteWithUser
 import pl.touk.nussknacker.ui.api.helpers.TestPermissions.CategorizedPermission
 import pl.touk.nussknacker.ui.db.DbConfig
-import pl.touk.nussknacker.ui.process.repository.{DBFetchingProcessRepository, FetchingProcessRepository, _}
+import pl.touk.nussknacker.ui.process.repository.{DBFetchingProcessRepository, _}
 import pl.touk.nussknacker.ui.process.subprocess.{DbSubprocessRepository, SubprocessDetails, SubprocessRepository, SubprocessResolver}
 import pl.touk.nussknacker.ui.security.api.{LoggedUser, Permission}
 import pl.touk.nussknacker.ui.validation.ProcessValidation
@@ -59,7 +60,7 @@ object TestFactory extends TestPermissions{
   def newDeploymentProcessRepository(db: DbConfig) = new DeployedProcessRepository(db,
     Map(TestProcessingTypes.Streaming -> buildInfo))
 
-  def newProcessActivityRepository(db: DbConfig) = new ProcessActivityRepository(db)
+  def newProcessActivityRepository(db: DbConfig) = new DBProcessActivityRepository(db)
 
   def withPermissions(route: RouteWithUser, permissions: TestPermissions.CategorizedPermission) =
     route.route(user("userId", permissions))

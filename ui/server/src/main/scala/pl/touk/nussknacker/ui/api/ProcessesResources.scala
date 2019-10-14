@@ -13,13 +13,14 @@ import pl.touk.nussknacker.engine.api.deployment.GraphProcess
 import pl.touk.nussknacker.ui.api.ProcessesResources.{UnmarshallError, WrongProcessId}
 import pl.touk.nussknacker.restmodel.displayedgraph.{DisplayableProcess, ProcessStatus}
 import pl.touk.nussknacker.ui.process.marshall.ProcessConverter
-import pl.touk.nussknacker.ui.process.repository.{FetchingProcessRepository, ProcessActivityRepository, WriteProcessRepository}
+import pl.touk.nussknacker.ui.process.repository.{DBProcessActivityRepository, WriteProcessRepository}
 import pl.touk.nussknacker.ui.process.repository.ProcessRepository._
 import pl.touk.nussknacker.ui.util._
 import pl.touk.nussknacker.ui._
 import EspErrorToHttp._
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import pl.touk.nussknacker.plugins.ChangesManagement
 import pl.touk.nussknacker.ui.validation.{FatalValidationError, ProcessValidation}
 import pl.touk.nussknacker.engine.ProcessingTypeData.ProcessingType
 import pl.touk.nussknacker.ui.process._
@@ -35,15 +36,19 @@ import pl.touk.nussknacker.ui.security.api.{LoggedUser, Permission}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import pl.touk.nussknacker.ui.security.api.PermissionSyntax._
+import pl.touk.nussknacker.engine.util.Implicits._
+import pl.touk.nussknacker.plugins.ChangeEvent.{OnArchived, OnCategoryChanged, OnDeleted, OnRenamed, OnSaved, OnUnarchived}
+import pl.touk.nussknacker.restmodel.process.repository.{FetchingProcessRepository, ProcessAlreadyDeployed}
 
 class ProcessesResources(val processRepository: FetchingProcessRepository,
                          writeRepository: WriteProcessRepository,
                          jobStatusService: JobStatusService,
-                         processActivityRepository: ProcessActivityRepository,
+                         processActivityRepository: DBProcessActivityRepository,
                          processValidation: ProcessValidation,
                          typesForCategories: ProcessTypesForCategories,
                          newProcessPreparer: NewProcessPreparer,
-                         val processAuthorizer:AuthorizeProcess)
+                         val processAuthorizer:AuthorizeProcess,
+                         changesManagement: ChangesManagement)
                         (implicit val ec: ExecutionContext, mat: Materializer)
   extends Directives
     with FailFastCirceSupport
@@ -66,7 +71,10 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
         } ~ path("unarchive" / Segment) { processName =>
           (post & processId(processName)) { processId =>
             canWrite(processId) {
-              complete(writeArchive(processId.id, isArchived = false))
+              complete {
+                writeArchive(processId.id, isArchived = false)
+                  .effect(() => changesManagement.handler(OnUnarchived(processId.name)))
+              }
             }
           }
         } ~ path("archive" / Segment) { processName =>
@@ -75,7 +83,10 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
               /*
               should not allow to archive still used subprocess IGNORED TEST
               */
-              complete(writeArchive(processId.id, isArchived = true))
+              complete {
+                writeArchive(processId.id, isArchived = true)
+                  .effect(() => changesManagement.handler(OnArchived(processId.name)))
+              }
             }
           }
         }  ~ path("processes") {
@@ -156,6 +167,7 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
             (delete & canWrite(processId)) {
               complete {
                 writeRepository.deleteProcess(processId.id).map(toResponse(StatusCodes.OK))
+                  .effect(() => changesManagement.handler(OnDeleted(processId.name)))
               }
             } ~ (put & canWrite(processId)) {
               entity(as[ProcessToSave]) { processToSave =>
@@ -165,6 +177,7 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
                       rejectSavingArchivedProcess
                     case false =>
                       saveProcess(processToSave, processId.id).map(toResponseEither[ValidationResult])
+                        .effect(() => changesManagement.handler(OnSaved(processId.name)))
                   }
                 }
               }
@@ -192,6 +205,7 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
                 processRepository.fetchLatestProcessDetailsForProcessId[Unit](processId.id).flatMap {
                   case Some(details) if details.currentlyDeployedAt.isEmpty =>
                     writeRepository.renameProcess(processId.id, newName).map(toResponse(StatusCodes.OK))
+                      .effect(() => changesManagement.handler(OnRenamed(processId.name, ProcessName(newName))))
                   case _ => Future.successful(espErrorToHttp(ProcessAlreadyDeployed(processName)))
                 }
               }
@@ -230,6 +244,7 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
                         isSubprocess = isSubprocess
                       )
                         .map(toResponse(StatusCodes.Created))
+                        .effect(() => changesManagement.handler(OnSaved(ProcessName(processName))))
                     case None => Future(HttpResponse(status = StatusCodes.BadRequest, entity = "Process category not found"))
                   }
                 }
@@ -256,6 +271,7 @@ class ProcessesResources(val processRepository: FetchingProcessRepository,
               complete {
                 // TODO: Validate that category exists at categories list
                 writeRepository.updateCategory(processId = processId.id, category = category).map(toResponse(StatusCodes.OK))
+                  .effect(() => changesManagement.handler(OnCategoryChanged(ProcessName(processName), category)))
               }
             }
           }

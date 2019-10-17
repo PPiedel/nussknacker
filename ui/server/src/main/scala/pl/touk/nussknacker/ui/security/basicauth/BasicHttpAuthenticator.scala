@@ -5,9 +5,7 @@ import java.io.File
 import akka.http.scaladsl.server.directives.Credentials.Provided
 import akka.http.scaladsl.server.directives.{Credentials, SecurityDirectives}
 import com.typesafe.config.{Config, ConfigFactory}
-import net.ceedubs.ficus.Ficus._
-import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import net.ceedubs.ficus.readers.EnumerationReader._
+
 import org.mindrot.jbcrypt.BCrypt
 import pl.touk.nussknacker.ui.security.api.LoggedUser
 import pl.touk.nussknacker.ui.security.api.Permission.Permission
@@ -21,9 +19,7 @@ class BasicHttpAuthenticator(usersList: List[ConfiguredUser]) extends SecurityDi
   //TODO: config reload
   private val users = prepareUsers()
 
-  def apply(credentials: Credentials): Future[Option[LoggedUser]] = Future {
-    authorize(credentials)
-  }
+  def apply(credentials: Credentials): Future[Option[LoggedUser]] = Future(authorize(credentials))
 
   private[security] def authorize(credentials: Credentials): Option[LoggedUser] = {
     credentials match {
@@ -58,6 +54,9 @@ class BasicHttpAuthenticator(usersList: List[ConfiguredUser]) extends SecurityDi
 }
 
 object BasicHttpAuthenticator {
+  import net.ceedubs.ficus.Ficus._
+  import net.ceedubs.ficus.readers.ArbitraryTypeReader._
+  import net.ceedubs.ficus.readers.EnumerationReader._
 
   def apply(path: String): BasicHttpAuthenticator = BasicHttpAuthenticator(ConfigFactory.parseFile(new File(path)))
 

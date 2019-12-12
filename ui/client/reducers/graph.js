@@ -364,7 +364,8 @@ function removeSubprocessVersionForLastSubprocess(processToDisplay, idToDelete) 
 }
 
 function prepareNewNodesWithLayout(state, nodesWithPositions) {
-  const alreadyUsedIds = state.processToDisplay.nodes.map(node => node.id)
+  const alreadyUsedIds = _.groupBy(state.processToDisplay.nodes.map(), 'type')
+
   const initialIds = nodesWithPositions.map(nodeWithPosition => nodeWithPosition.node.id)
   const uniqueIds = _.reduce(initialIds, (uniqueIds, initialId) => {
     const reservedIds = alreadyUsedIds.concat(uniqueIds)

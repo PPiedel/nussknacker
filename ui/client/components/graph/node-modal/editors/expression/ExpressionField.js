@@ -1,15 +1,15 @@
 import React from "react"
 import _ from "lodash"
 import EditableExpression from "./EditableExpression"
-import ProcessUtils from "../../../../../common/ProcessUtils"
-import EditableExpressionWithTestResults from "./tests/EditableExpressionWithTestResults"
+import EditableExpressionWithTestResults from "../../tests/EditableExpressionWithTestResults"
+import {Types} from "./EditorType"
 
 export default class ExpressionField extends React.Component {
 
   render() {
     const {
       fieldName, fieldLabel, exprPath, validators, isEditMode, editedNode, isMarked, showValidation, showSwitch,
-      nodeObjectDetails, setNodeDataAt, testResultsToShow, testResultsToHide, toggleTestResult, renderFieldLabel
+      nodeObjectDetails, setNodeDataAt, testResultsToShow, testResultsToHide, toggleTestResult, renderFieldLabel, fieldType
     } = this.props
     const readOnly = !isEditMode
     const exprTextPath = `${exprPath}.expression`
@@ -32,32 +32,28 @@ export default class ExpressionField extends React.Component {
         />
       )
 
-    const param = this.findParamByName(fieldLabel)
-
-    const editableExpression =
-      <EditableExpression
-        fieldType={param ? ProcessUtils.humanReadableType(param.typ.refClazzName) : "expression"}
-        editorName={"rawEditor"}
-        renderFieldLabel={renderFieldLabel}
-        fieldLabel={fieldLabel}
-        fieldName={fieldName}
-        expressionObj={expressionObj}
-        validators={validators}
-        isMarked={marked}
-        showValidation={showValidation}
-        showSwitch={showSwitch}
-        readOnly={readOnly}
-        onValueChange={(newValue) => setNodeDataAt(exprTextPath, newValue)}
-      />
-
     return (
       <EditableExpressionWithTestResults
         fieldName={fieldName}
         testResultsToShow={testResultsToShow}
         testResultsToHide={testResultsToHide}
-        toggleTestResult={toggleTestResult}
-        field={editableExpression}
-      />
+        toggleTestResult={toggleTestResult}>
+        <EditableExpression
+          fieldType={fieldType}
+          param={this.findParamByName(fieldLabel)}
+          editorName={Types.RAW_EDITOR}
+          renderFieldLabel={renderFieldLabel}
+          fieldLabel={fieldLabel}
+          fieldName={fieldName}
+          expressionObj={expressionObj}
+          validators={validators}
+          isMarked={marked}
+          showValidation={showValidation}
+          showSwitch={showSwitch}
+          readOnly={readOnly}
+          onValueChange={(newValue) => setNodeDataAt(exprTextPath, newValue)}
+        />
+      </EditableExpressionWithTestResults>
     )
   }
 
@@ -69,8 +65,6 @@ export default class ExpressionField extends React.Component {
     }
   }
 
-  findParamByName(paramName) {
-    const {nodeObjectDetails} = this.props
-    return (_.get(nodeObjectDetails, "parameters", [])).find((param) => param.name === paramName)
-  }
+  findParamByName = (paramName) => (_.get(this.props, "nodeObjectDetails.parameters", []))
+    .find((param) => param.name === paramName)
 }

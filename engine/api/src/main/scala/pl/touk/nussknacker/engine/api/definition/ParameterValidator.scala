@@ -6,7 +6,9 @@ import cats.data.Validated.{invalid, valid}
 import io.circe.generic.extras.ConfiguredJsonCodec
 import org.apache.commons.lang3.StringUtils
 import pl.touk.nussknacker.engine.api.context.PartSubGraphCompilationError
-import pl.touk.nussknacker.engine.api.context.ProcessCompilationError.{EmptyMandatoryParameter, NodeId}
+import pl.touk.nussknacker.engine.api.context.ProcessCompilationError.{EmptyMandatoryParameter, NodeId, WrongFixedExpressionValue, WrongIntegerExpressionValue}
+
+import scala.util.Try
 
 /**
  * Extend this trait to configure new parameter validator which should be handled on FE.
@@ -16,12 +18,33 @@ import pl.touk.nussknacker.engine.api.context.ProcessCompilationError.{EmptyMand
  */
 @ConfiguredJsonCodec sealed trait ParameterValidator {
 
-  def isValid(paramName: String, expression: String)(implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit]
+  def isValid(paramName: String, value: String)(implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit]
 
 }
 
 case object MandatoryValueValidator extends ParameterValidator {
 
-  override def isValid(paramName: String, expression: String)(implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit] =
-    if (StringUtils.isNotBlank(expression)) valid(Unit) else invalid(EmptyMandatoryParameter(paramName))
+  override def isValid(paramName: String, value: String)
+                      (implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit] = {
+
+    if (StringUtils.isNotBlank(value)) valid(Unit) else invalid(EmptyMandatoryParameter(paramName))
+  }
+}
+
+case class FixedValuesValidator(values: List[FixedExpressionValue]) extends ParameterValidator {
+
+  override def isValid(paramName: String, value: String)
+                      (implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit] = {
+
+    val possibleValues = values.map(possibleValue => possibleValue.expression)
+    if (possibleValues.contains(value)) valid(Unit) else invalid(WrongFixedExpressionValue(paramName))
+  }
+}
+
+case object IntegerValueValidator extends ParameterValidator {
+  override def isValid(paramName: String, value: String)
+                      (implicit nodeId: NodeId): Validated[PartSubGraphCompilationError, Unit] = {
+
+    if (Try(value.toInt).isSuccess) valid(Unit) else invalid(WrongIntegerExpressionValue(paramName))
+  }
 }

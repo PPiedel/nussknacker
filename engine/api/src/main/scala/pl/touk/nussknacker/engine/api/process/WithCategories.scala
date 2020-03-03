@@ -30,10 +30,13 @@ object WithCategories {
 }
 
 object ParameterConfig {
-  val empty: ParameterConfig = ParameterConfig(None, None, None)
+  val empty: ParameterConfig = ParameterConfig(None, None, None, None)
 }
 
-@JsonCodec case class ParameterConfig(defaultValue: Option[String], editor: Option[ParameterEditor], validators: Option[List[ParameterValidator]])
+@JsonCodec case class ParameterConfig(defaultValue: Option[String],
+                                      editor: Option[ParameterEditor],
+                                      validators: Option[List[ParameterValidator]],
+                                      label: Option[String])
 
 object SingleNodeConfig {
   import cats.syntax.semigroup._

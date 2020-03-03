@@ -4,6 +4,8 @@ import io.circe.generic.JsonCodec
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.EnumerationReader._
+import net.ceedubs.ficus.readers.ValueReader
+import pl.touk.nussknacker.engine.util.config.FicusReaders._
 import pl.touk.nussknacker.engine.ModelData
 import pl.touk.nussknacker.engine.api.definition.{MandatoryValueValidator, Parameter, ParameterEditor, ParameterValidator}
 import pl.touk.nussknacker.engine.api.process.{ParameterConfig, SingleNodeConfig}
@@ -53,7 +55,7 @@ object UIProcessObjects {
     val defaultParametersFactory = DefaultValueDeterminerChain(defaultParametersValues)
 
     val nodeCategoryMapping = processConfig.getOrElse[Map[String, Option[String]]]("nodeCategoryMapping", Map.empty)
-    val additionalPropertiesConfig = processConfig.getOrElse[Map[String, AdditionalProcessProperty]]("additionalFieldsConfig", Map.empty)
+    val additionalFields = processConfig.getOrElse[Map[String, ParameterConfig]]("additionalFieldsConfig", Map.empty)
 
     UIProcessObjects(
       nodesToAdd = DefinitionPreparer.prepareNodesToAdd(
@@ -69,7 +71,7 @@ object UIProcessObjects {
       ),
       processDefinition = uiProcessDefinition,
       nodesConfig = nodesConfig,
-      additionalPropertiesConfig = additionalPropertiesConfig,
+      additionalPropertiesConfig = additionalFields,
       edgesForNodes = DefinitionPreparer.prepareEdgeTypes(
         user = user,
         processDefinition = chosenProcessDefinition,
@@ -100,7 +102,7 @@ object UIProcessObjects {
 @JsonCodec(encodeOnly = true) case class UIProcessObjects(nodesToAdd: List[NodeGroup],
                             processDefinition: UIProcessDefinition,
                             nodesConfig: Map[String, SingleNodeConfig],
-                            additionalPropertiesConfig: Map[String, AdditionalProcessProperty],
+                            additionalPropertiesConfig: Map[String, ParameterConfig],
                             edgesForNodes: List[NodeEdges])
 
 @JsonCodec(encodeOnly = true) case class UIProcessDefinition(services: Map[String, UIObjectDefinition],

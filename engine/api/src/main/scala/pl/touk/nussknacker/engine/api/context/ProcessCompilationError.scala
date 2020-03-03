@@ -141,6 +141,22 @@ object ProcessCompilationError {
       EmptyMandatoryParameter(paramName, nodeId.id)
   }
 
+  case class WrongFixedExpressionValue(paramName: String, nodeId: String)
+    extends PartSubGraphCompilationError with InASingleNode
+
+  object WrongFixedExpressionValue {
+    def apply(paramName: String)(implicit nodeId: NodeId): PartSubGraphCompilationError =
+      WrongFixedExpressionValue(paramName, nodeId.id)
+  }
+
+  case class WrongIntegerExpressionValue(paramName: String, nodeId: String)
+    extends PartSubGraphCompilationError with InASingleNode
+
+  object WrongIntegerExpressionValue {
+    def apply(paramName: String)(implicit nodeId: NodeId): PartSubGraphCompilationError =
+      WrongIntegerExpressionValue(paramName, nodeId.id)
+  }
+
   case class OverwrittenVariable(variableName: String, nodeId: String)
     extends PartSubGraphCompilationError with InASingleNode
 

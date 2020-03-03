@@ -80,7 +80,7 @@ class AdditionalPropertiesValidatorTest extends FunSuite with Matchers {
 
     keywords.foreach { keywordSeq =>
       errors.exists { err =>
-        keywordSeq.forall(err.message contains _)
+        keywordSeq.forall(str => err.message contains str)
       }
     }
   }

@@ -7,20 +7,20 @@ import pl.touk.nussknacker.engine.ProcessingTypeData.ProcessingType
 import pl.touk.nussknacker.engine.api.ProcessAdditionalFields
 import pl.touk.nussknacker.engine.api.context.ProcessCompilationError
 import pl.touk.nussknacker.engine.api.expression.ExpressionParser
+import pl.touk.nussknacker.engine.api.process.ParameterConfig
 import pl.touk.nussknacker.engine.canonicalgraph.CanonicalProcess
 import pl.touk.nussknacker.engine.compile.{NodeTypingInfo, ProcessValidator}
 import pl.touk.nussknacker.engine.graph.node.{Disableable, NodeData, Source, SubprocessInputDefinition}
 import pl.touk.nussknacker.restmodel.displayedgraph.DisplayableProcess
 import pl.touk.nussknacker.restmodel.validation.CustomProcessValidator
 import pl.touk.nussknacker.restmodel.validation.ValidationResults.ValidationResult
-import pl.touk.nussknacker.ui.definition.AdditionalProcessProperty
 import pl.touk.nussknacker.ui.process.marshall.ProcessConverter
 import pl.touk.nussknacker.ui.process.subprocess.SubprocessResolver
 import shapeless.syntax.typeable._
 
 object ProcessValidation{
   def apply(data: Map[ProcessingType, ModelData],
-            additionalFields: Map[ProcessingType, Map[String, AdditionalProcessProperty]],
+            additionalFields: Map[ProcessingType, Map[String, ParameterConfig]],
             subprocessResolver: SubprocessResolver,
             customProcessNodesValidators: Map[ProcessingType, CustomProcessValidator]) : ProcessValidation = {
     new ProcessValidation(data.mapValues(_.validator), additionalFields, subprocessResolver, customProcessNodesValidators)
@@ -28,7 +28,7 @@ object ProcessValidation{
 }
 
 class ProcessValidation(validators: Map[ProcessingType, ProcessValidator],
-                        additionalFieldsConfig: Map[ProcessingType, Map[String, AdditionalProcessProperty]],
+                        additionalFieldsConfig: Map[ProcessingType, Map[String, ParameterConfig]],
                         subprocessResolver: SubprocessResolver,
                         customProcessNodesValidators: Map[ProcessingType, CustomProcessValidator]) {
 

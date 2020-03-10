@@ -2,6 +2,9 @@
 
 To see biggest differences please consult the [changelog](Changelog.md).
 
+## In version 0.0.14 (not relased)
+* Old way or additional properties configuration should be replaced by the new one, which is now mapped to `Map[String, AdditionalPropertyConfig]`
+
 ## In version 0.0.13 (not released)
 
 * [#755](https://github.com/TouK/nussknacker/pull/755) Default async execution context does not depend on parallelism.

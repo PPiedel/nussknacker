@@ -8,6 +8,9 @@ For detailed instructions how to migrate to the newest version please see [migra
 Nussknacker versions
 ====================
 
+## In version 0.0.14 (not relased)
+* Change of additional properties configuration
+
 0.0.13 (not released)
 -------------
 * Old way of configuring Flink and model (via `flinkConfig` and `processConfig`) is removed. `processTypes` 
